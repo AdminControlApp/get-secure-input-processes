@@ -22,7 +22,7 @@ jobs:
             architecture: x64
             build: |
               pnpm build
-              strip -x **/*.node
+              strip -x *.node
           - host: macos-latest
             target: aarch64-apple-darwin
             build: |
@@ -32,7 +32,7 @@ jobs:
               SYSROOT=$(xcrun --sdk macosx --show-sdk-path);
               export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
               pnpm build --target aarch64-apple-darwin
-              strip -x **/*.node
+              strip -x aarch64-apple-darwin/*.node
     name: stable - ${{ matrix.settings.target }} - node@16
     runs-on: ${{ matrix.settings.host }}
 
