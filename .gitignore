@@ -1,5 +1,4 @@
 target
-npm
 *.node
 .pnpm-debug.log
 node_modules
