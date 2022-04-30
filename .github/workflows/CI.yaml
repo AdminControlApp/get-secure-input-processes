@@ -1,24 +1,27 @@
 name: CI
+
 env:
   DEBUG: napi:*
   APP_NAME: get-secure-input-processes
-  MACOSX_DEPLOYMENT_TARGET: '10.13'
-'on':
+  MACOSX_DEPLOYMENT_TARGET: "10.13"
+
+on:
   push:
     branches:
       - main
     tags-ignore:
-      - '**'
+      - "**"
     paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
+      - "**/*.md"
+      - license
+      - "**/*.gitignore"
       - .editorconfig
       - docs/**
   pull_request: null
+
 jobs:
   build:
-    if: '!contains(github.event.head_commit.message, ''skip ci'')'
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       fail-fast: false
       matrix:
@@ -41,8 +44,10 @@ jobs:
               strip -x *.node
     name: stable - ${{ matrix.settings.target }} - node@16
     runs-on: ${{ matrix.settings.host }}
+
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup node
         uses: actions/setup-node@v3
         if: ${{ !matrix.settings.docker }}
@@ -51,6 +56,7 @@ jobs:
           check-latest: true
           cache: yarn
           architecture: ${{ matrix.settings.architecture }}
+
       - name: Install
         uses: actions-rs/toolchain@v1
         if: ${{ !matrix.settings.docker }}
@@ -59,50 +65,60 @@ jobs:
           override: true
           toolchain: stable
           target: ${{ matrix.settings.target }}
+
       - name: Generate Cargo.lock
         uses: actions-rs/cargo@v1
         if: ${{ !matrix.settings.docker }}
         with:
           command: generate-lockfile
+
       - name: Cache cargo
         uses: actions/cache@v2
         with:
           path: ~/.cargo/registry
           key: ${{ matrix.settings.target }}-cargo-registry
+
       - name: Cache cargo index
         uses: actions/cache@v2
         with:
           path: ~/.cargo/git
           key: ${{ matrix.settings.target }}-cargo-index
+
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
           path: node_modules
           key: npm-cache-build-${{ matrix.settings.target }}-node@16
+
       - name: Setup toolchain
         run: ${{ matrix.settings.setup }}
         if: ${{ matrix.settings.setup }}
         shell: bash
+
       - name: Install dependencies
-        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+        run: pnpm install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+
       - name: Build in docker
         uses: addnab/docker-run-action@v3
         if: ${{ matrix.settings.docker }}
         with:
           image: ${{ matrix.settings.docker }}
-          options: '-v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build'
+          options: "-v ${{ env.HOME }}/.cargo/git:/root/.cargo/git -v ${{ env.HOME }}/.cargo/registry:/root/.cargo/registry -v ${{ github.workspace }}:/build -w /build"
           run: ${{ matrix.settings.build }}
+
       - name: Build
         run: ${{ matrix.settings.build }}
         if: ${{ !matrix.settings.docker }}
         shell: bash
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: bindings-${{ matrix.settings.target }}
           path: ${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  test-macOS-windows-binding:
+
+  test-macOS-binding:
     name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
     needs:
       - build
@@ -113,10 +129,10 @@ jobs:
           - host: macos-latest
             target: x86_64-apple-darwin
         node:
-          - '12'
-          - '14'
-          - '16'
+          - "14"
+          - "16"
     runs-on: ${{ matrix.settings.host }}
+
     steps:
       - uses: actions/checkout@v3
       - name: Setup node
@@ -124,24 +140,30 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           check-latest: true
-          cache: yarn
+          cache: pnpm
+
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
           path: node_modules
-          key: npm-cache-test-${{ matrix.settings.target }}-${{ matrix.node }}-${{ hashFiles('yarn.lock') }}
+          key: npm-cache-test-${{ matrix.settings.target }}-${{ matrix.node }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+
       - name: Install dependencies
-        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+        run: pnpm install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: bindings-${{ matrix.settings.target }}
           path: .
+
       - name: List packages
         run: ls -R .
         shell: bash
+
       - name: Test bindings
-        run: yarn test
+        run: pnpm test
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
@@ -154,25 +176,31 @@ jobs:
         with:
           node-version: 16
           check-latest: true
-          cache: yarn
+          cache: pnpm
+
       - name: Cache NPM dependencies
         uses: actions/cache@v2
         with:
           path: node_modules
-          key: npm-cache-ubuntu-latest-${{ hashFiles('yarn.lock') }}
+          key: npm-cache-ubuntu-latest-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             npm-cache-
+
       - name: Install dependencies
-        run: yarn install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+        run: pnpm install --ignore-scripts --frozen-lockfile --registry https://registry.npmjs.org --network-timeout 300000
+
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           path: artifacts
+
       - name: Move artifacts
         run: yarn artifacts
+
       - name: List packages
         run: ls -R ./npm
         shell: bash
+
       - name: Publish
         run: |
           if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";

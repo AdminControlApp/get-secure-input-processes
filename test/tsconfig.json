@@ -1,0 +1,18 @@
+{
+	"extends": "@leonzalion/configs/tsconfig.json",
+	"compilerOptions": {
+		"rootDir": "..",
+		"baseUrl": ".",
+		"paths": {
+			"~/*": [
+				"../*"
+			],
+			"~test/*": [
+				"./*"
+			]
+		}
+	},
+	"include": [
+		"./"
+	]
+}
