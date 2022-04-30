@@ -29,9 +29,5 @@
     "build:debug": "napi build --platform",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "vitest run"
-  },
-  "optionalDependencies": {
-    "get-secure-input-processes-darwin-arm64": "0.0.0",
-    "get-secure-input-processes-darwin-x64": "0.0.0"
   }
 }
