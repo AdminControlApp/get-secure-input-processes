@@ -33,7 +33,6 @@ jobs:
               export CFLAGS="-isysroot $SYSROOT -isystem $SYSROOT";
               pnpm build --target aarch64-apple-darwin
               strip -x *.node
-              mv *.node .
     name: stable - ${{ matrix.settings.target }} - node@16
     runs-on: ${{ matrix.settings.host }}
 
